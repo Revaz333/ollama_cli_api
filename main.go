@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"os/exec"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 )
 
 type Request struct {
@@ -18,7 +18,7 @@ func main() {
 
 	r.POST("/api/chat", func(ctx *gin.Context) {
 
-		var req Request
+		var req map[string]interface{}
 
 		err := ctx.Bind(&req)
 		if err != nil {
@@ -26,26 +26,18 @@ func main() {
 			return
 		}
 
-		if req.Message == "" {
-			ctx.JSON(http.StatusUnprocessableEntity, "message is required")
-			return
-		}
+		client := resty.New()
+		client.SetBaseURL("http://localhost:11434/api")
 
-		cmd := exec.Command("./chat_compilation.sh", "d")
+		exec.Command("./ollama_serve.sh")
 
-		out, err := cmd.CombinedOutput()
+		resp, err := client.R().SetBody(req).Post("/chat")
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, err)
 			return
 		}
 
-		var resp map[string]interface{}
-
-		err = json.Unmarshal(out, &resp)
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, err)
-			return
-		}
+		exec.Command("./ollama_kill.sh")
 
 		ctx.JSON(http.StatusOK, resp)
 		return
