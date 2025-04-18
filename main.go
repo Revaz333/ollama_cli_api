@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"os/exec"
 
@@ -39,7 +40,15 @@ func main() {
 
 		exec.Command("./ollama_kill.sh")
 
-		ctx.JSON(http.StatusOK, resp)
+		var respJson map[string]interface{}
+
+		err = json.Unmarshal(resp.Body(), respJson)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, err)
+			return
+		}
+
+		ctx.JSON(http.StatusOK, respJson)
 		return
 	})
 
