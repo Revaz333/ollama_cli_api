@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os/exec"
 
+	"log"
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
 )
@@ -23,6 +24,7 @@ func main() {
 
 		err := ctx.Bind(&req)
 		if err != nil {
+			log.Printf("go error on request bind: %v", err)
 			ctx.JSON(http.StatusBadRequest, err)
 			return
 		}
@@ -34,6 +36,7 @@ func main() {
 
 		resp, err := client.R().SetBody(req).Post("/chat")
 		if err != nil {
+			log.Printf("go error on request to ollama: %v", err)
 			ctx.JSON(http.StatusBadRequest, err)
 			return
 		}
@@ -42,8 +45,9 @@ func main() {
 
 		var respJson map[string]interface{}
 
-		err = json.Unmarshal(resp.Body(), respJson)
+		err = json.Unmarshal(resp.Body(), &respJson)
 		if err != nil {
+			log.Printf("got error on response decode: %v", err)
 			ctx.JSON(http.StatusBadRequest, err)
 			return
 		}
